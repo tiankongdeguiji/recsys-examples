@@ -60,6 +60,16 @@ mkdir -p "${OUT_DIR}"
 
 GR_ARRIVAL_ARGS=()
 SGLANG_ARRIVAL_ARGS=(--arrival-mode "${ARRIVAL_MODE}")
+SGLANG_MEM_ARGS=()
+if [[ -n "${SGLANG_MEM_FRACTION_STATIC:-}" ]]; then
+  SGLANG_MEM_ARGS+=(--mem-fraction-static "${SGLANG_MEM_FRACTION_STATIC}")
+fi
+if [[ -n "${SGLANG_MAX_RUNNING_REQUESTS:-}" ]]; then
+  SGLANG_MEM_ARGS+=(--max-running-requests "${SGLANG_MAX_RUNNING_REQUESTS}")
+fi
+if [[ -n "${SGLANG_CONTEXT_LENGTH:-}" ]]; then
+  SGLANG_MEM_ARGS+=(--context-length "${SGLANG_CONTEXT_LENGTH}")
+fi
 SGLANG_CACHE_ARGS=()
 gr_append_sglang_cache_args SGLANG_CACHE_ARGS
 SGLANG_GRAPH_ARGS=()
@@ -139,7 +149,8 @@ PYTHONPATH="${SGLANG_REPO}/python:src:${PYTHONPATH:-}" \
   --beam-width "${BEAM_WIDTH}" \
   --requests "${REQUESTS}" \
   "${SGLANG_ARRIVAL_ARGS[@]}" \
-  "${SGLANG_CACHE_ARGS[@]}" \
+  "${SGLANG_MEM_ARGS[@]}" \
+          "${SGLANG_CACHE_ARGS[@]}" \
   "${SGLANG_GRAPH_ARGS[@]}" \
   --warmup-runs "${WARMUP_RUNS}" \
   --repeat "${REPEAT}" \

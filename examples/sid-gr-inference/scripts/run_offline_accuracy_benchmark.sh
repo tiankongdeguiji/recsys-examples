@@ -130,6 +130,9 @@ for context_len in ${CONTEXT_LENS}; do
           --beam-width "${beam_width}" \
           --requests "${requests}" \
           --arrival-mode batch \
+          ${SGLANG_MEM_FRACTION_STATIC:+--mem-fraction-static "${SGLANG_MEM_FRACTION_STATIC}"} \
+          ${SGLANG_MAX_RUNNING_REQUESTS:+--max-running-requests "${SGLANG_MAX_RUNNING_REQUESTS}"} \
+          ${SGLANG_CONTEXT_LENGTH:+--context-length "${SGLANG_CONTEXT_LENGTH}"} \
           --disable-radix-cache \
           --warmup-runs 1 \
           --repeat "${CORRECTNESS_REPEAT}" \

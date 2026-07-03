@@ -120,6 +120,10 @@ def _engine_kwargs(args) -> dict[str, Any]:
         kwargs["tp_size"] = args.tp_size
     if args.mem_fraction_static is not None:
         kwargs["mem_fraction_static"] = args.mem_fraction_static
+    if args.max_running_requests is not None:
+        kwargs["max_running_requests"] = args.max_running_requests
+    if args.context_length is not None:
+        kwargs["context_length"] = args.context_length
     if args.disable_radix_cache:
         kwargs["disable_radix_cache"] = True
     if args.disable_piecewise_cuda_graph:
@@ -832,6 +836,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--require-tokenizer", action="store_true")
     parser.add_argument("--tp-size", type=int)
     parser.add_argument("--mem-fraction-static", type=float)
+    parser.add_argument("--max-running-requests", type=int)
+    parser.add_argument("--context-length", type=int)
     parser.add_argument(
         "--disable-radix-cache",
         action=argparse.BooleanOptionalAction,
