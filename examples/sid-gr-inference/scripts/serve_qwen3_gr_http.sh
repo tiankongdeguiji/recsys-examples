@@ -79,6 +79,7 @@ fi
 gr_append_option_if_env_set args GR_CATALOG_JSONL --catalog-jsonl
 gr_append_option_if_env_set args GR_CATALOG_VOCAB_SIZE --catalog-vocab-size
 gr_append_option_if_env_set args GR_CATALOG_EOS_TOKEN_ID --catalog-eos-token-id
+gr_append_option_if_env_set args GR_CATALOG_MASK_BACKEND --catalog-mask-backend
 gr_append_gr_beam_detail_args args
 gr_append_option_if_env_set args GR_SUPPRESS_TOKEN_IDS --suppress-token-ids
 if [[ "${GR_SUPPRESS_SPECIAL_TOKENS_ON_IGNORE_EOS:-1}" == "0" ]]; then

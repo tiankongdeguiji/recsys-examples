@@ -372,6 +372,7 @@ def _make_catalog_store(args, config) -> TrieItemMaskProviderStore | None:
         metadata_field=args.catalog_metadata_field,
         allow_duplicate_item_ids=args.catalog_allow_duplicate_item_ids,
         allow_duplicate_token_paths=args.catalog_allow_duplicate_token_paths,
+        mask_backend=args.catalog_mask_backend,
     )
 
 
@@ -662,6 +663,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--catalog-jsonl")
     parser.add_argument("--catalog-vocab-size", type=int)
     parser.add_argument("--catalog-eos-token-id", type=int)
+    parser.add_argument(
+        "--catalog-mask-backend",
+        choices=("python", "static"),
+        default="python",
+        help="Item-mask computation backend: python trie walk or STATIC CSR",
+    )
     parser.add_argument("--catalog-item-id-field", default="item_id")
     parser.add_argument("--catalog-token-ids-field", default="token_ids")
     parser.add_argument("--catalog-metadata-field", default="metadata")

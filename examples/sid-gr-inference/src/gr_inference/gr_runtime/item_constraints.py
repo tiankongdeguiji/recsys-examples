@@ -147,7 +147,22 @@ class SemanticItemCatalog:
         vocab_size: int,
         eos_token_id: int | None = None,
         allow_eos_for_terminal: bool = True,
+        mask_backend: str = "python",
     ) -> "TrieItemMaskProvider":
+        if mask_backend == "static":
+            from gr_inference.gr_runtime.static_item_constraints import (
+                StaticTrieItemMaskProvider,
+            )
+
+            return StaticTrieItemMaskProvider(
+                self.trie(),
+                vocab_size=vocab_size,
+                eos_token_id=eos_token_id,
+                allow_eos_for_terminal=allow_eos_for_terminal,
+                token_paths=[item.token_ids for item in self.items],
+            )
+        if mask_backend != "python":
+            raise ValueError(f"unknown mask_backend: {mask_backend!r}")
         return TrieItemMaskProvider(
             self.trie(),
             vocab_size=vocab_size,
@@ -172,9 +187,11 @@ class TrieItemMaskProviderStore:
         version: int = 1,
         metadata: Mapping[str, Any] | None = None,
         max_reload_history: int = 16,
+        mask_backend: str = "python",
     ) -> None:
         self._lock = RLock()
         self._provider = provider
+        self._mask_backend = mask_backend
         self._version = int(version)
         self._metadata = dict(metadata or {})
         self._previous_provider: TrieItemMaskProvider | None = None
@@ -191,14 +208,17 @@ class TrieItemMaskProviderStore:
         vocab_size: int,
         eos_token_id: int | None = None,
         allow_eos_for_terminal: bool = True,
+        mask_backend: str = "python",
     ) -> "TrieItemMaskProviderStore":
         return cls(
             catalog.provider(
                 vocab_size=vocab_size,
                 eos_token_id=eos_token_id,
                 allow_eos_for_terminal=allow_eos_for_terminal,
+                mask_backend=mask_backend,
             ),
             metadata=catalog.status(),
+            mask_backend=mask_backend,
         )
 
     @classmethod
@@ -214,6 +234,7 @@ class TrieItemMaskProviderStore:
         metadata_field: str | None = "metadata",
         allow_duplicate_item_ids: bool = False,
         allow_duplicate_token_paths: bool = False,
+        mask_backend: str = "python",
     ) -> "TrieItemMaskProviderStore":
         catalog = SemanticItemCatalog.from_jsonl(
             path,
@@ -229,6 +250,7 @@ class TrieItemMaskProviderStore:
             vocab_size=vocab_size,
             eos_token_id=eos_token_id,
             allow_eos_for_terminal=allow_eos_for_terminal,
+            mask_backend=mask_backend,
         )
 
     def snapshot(self) -> "TrieItemMaskProvider":
@@ -289,6 +311,7 @@ class TrieItemMaskProviderStore:
                     vocab_size=vocab_size,
                     eos_token_id=eos_token_id,
                     allow_eos_for_terminal=allow_eos_for_terminal,
+                    mask_backend=self._mask_backend,
                 ),
                 metadata=catalog.status(),
                 operation="reload_jsonl",
@@ -338,6 +361,7 @@ class TrieItemMaskProviderStore:
             return {
                 "version": self._version,
                 "previous_version": self._previous_version,
+                "mask_backend": self._mask_backend,
                 "reload_history": tuple(self._reload_history),
                 "last_reload": self._reload_history[-1]
                 if self._reload_history
