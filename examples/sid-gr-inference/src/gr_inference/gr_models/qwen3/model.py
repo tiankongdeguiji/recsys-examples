@@ -12,6 +12,7 @@ from typing import Any
 from gr_inference.gr_kernels.prefill import PrefillAttention
 from gr_inference.gr_kv import ContextKV
 from gr_inference.gr_models.qwen3.config import Qwen3GRConfig
+from gr_inference.gr_models.qwen3.fusion import default_qwen3_fusion_policy
 from gr_inference.gr_models.qwen3.layers import Qwen3RMSNorm, Qwen3SingleLayerPrefill
 from gr_inference.gr_runtime import (
     FixedBeamDecodeLoop,
@@ -56,6 +57,7 @@ if nn is not None:
             dtype: Any | None = None,
         ) -> None:
             super().__init__()
+            default_qwen3_fusion_policy()
             if config.vocab_size is None:
                 raise ValueError("Qwen3GRModel requires config.vocab_size")
             self.config = config

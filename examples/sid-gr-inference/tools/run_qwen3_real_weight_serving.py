@@ -53,6 +53,9 @@ from gr_inference.gr_kernels.prefill import (  # noqa: E402
     TorchSDPAPrefillBackend,
 )
 from gr_inference.gr_models import HFCheckpointLoader, resolve_model_dir  # noqa: E402
+from gr_inference.gr_models.qwen3.fusion import (  # noqa: E402
+    default_qwen3_fusion_policy,
+)
 from gr_inference.gr_models.qwen3 import (  # noqa: E402
     DEFAULT_QWEN3_MODEL_ID,
     Qwen3GRConfig,
@@ -583,6 +586,12 @@ def _run_result(
         "scheduler_status": status,
         "scheduler_metrics": metrics,
         "kernel_backend_selection": _selected_kernel_backends(),
+        "qwen3_fusion_policy": {
+            **default_qwen3_fusion_policy().summary(),
+            "decode_next_input_norm": (
+                os.environ.get("GR_INFERENCE_DECODE_NEXT_INPUT_NORM_FUSION") == "1"
+            ),
+        },
         "flashinfer_call_counts": flashinfer_call_counts(),
         "gr_trtllm_call_counts": gr_trtllm_call_counts(),
         "wall_ms": wall_ms,

@@ -173,6 +173,9 @@ Core implementation points:
 - QK norm and RoPE prefer the fastest available SGLang-style in-place kernels,
   with FlashInfer/Torch fallback. Experimental branches are not part of the
   serving hot path.
+- `GR_INFERENCE_QWEN3_DISABLE_FUSIONS` supports controlled Qwen3 kernel
+  ablations without changing attention or GEMM backends. Set it to `all`, or a
+  comma-separated subset of `qk_norm`, `rope`, `add_rmsnorm`, and `mlp`.
 - Prefill uses SGLang-style piecewise CUDA graph by default. The current
   Qwen3-1.7B bs4/ctx1000 shape captures six graph pieces: embed, four layer
   chunks, and output.

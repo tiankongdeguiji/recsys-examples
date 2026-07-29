@@ -33,6 +33,7 @@ from gr_inference.gr_kernels.package_imports import (
 from gr_inference.gr_kernels.prefill import PrefillAttention
 from gr_inference.gr_kv import ContextKV
 from gr_inference.gr_models.qwen3.config import Qwen3GRConfig
+from gr_inference.gr_models.qwen3.fusion import qwen3_fusion_enabled
 from gr_inference.gr_runtime.decode_kv import BeamKVWriter
 from gr_inference.gr_runtime.engine import GRDecodeEngine
 from gr_inference.gr_runtime.generation import GRGenerationState
@@ -239,6 +240,8 @@ if nn is not None:
             fused_qk_norm_rope = (
                 _trtllm_fused_qk_norm_rope()
                 if selected_backend == "trtllm_aligned"
+                and qwen3_fusion_enabled("qk_norm")
+                and qwen3_fusion_enabled("rope")
                 and _trtllm_qk_norm_rope_phase_enabled(qk_phase)
                 else None
             )
@@ -266,7 +269,7 @@ if nn is not None:
                 )
                 if fused_output is not None:
                     return fused_output
-            if _apply_sglang_fused_qknorm(
+            if qwen3_fusion_enabled("qk_norm") and _apply_sglang_fused_qknorm(
                 q,
                 k,
                 self.q_norm.weight,
@@ -348,7 +351,8 @@ if nn is not None:
         def post_attention_residual_norm_projected(self, residual, projected):
             fused_add_rmsnorm = _flashinfer_fused_add_rmsnorm()
             if (
-                _selected_kernel_backend(CAP_FUSED_ADD_RMSNORM) == "flashinfer"
+                qwen3_fusion_enabled("add_rmsnorm")
+                and _selected_kernel_backend(CAP_FUSED_ADD_RMSNORM) == "flashinfer"
                 and fused_add_rmsnorm is not None
                 and _is_cuda_tensor(residual)
                 and _is_cuda_tensor(projected)
@@ -365,6 +369,8 @@ if nn is not None:
             return super().post_attention_residual_norm_projected(residual, projected)
 
         def mlp(self, hidden_states):
+            if not qwen3_fusion_enabled("mlp"):
+                return self.fused_mlp(hidden_states, self)
             selected_backend = _selected_kernel_backend(CAP_FUSED_MLP)
             if selected_backend == "sgl_kernel":
                 fused_silu_mul = _sgl_kernel_silu_and_mul()
@@ -426,7 +432,8 @@ if nn is not None:
             )
 
         def silu_mul(self, gate, up):
-            _selected_kernel_backend(CAP_FUSED_MLP)
+            if qwen3_fusion_enabled("mlp"):
+                _selected_kernel_backend(CAP_FUSED_MLP)
             return torch.nn.functional.silu(gate) * up
 
         def down_proj_only(self, hidden_states):
@@ -1089,7 +1096,7 @@ def apply_qwen3_rope(q, k, *, rope_theta: float = 1_000_000.0, position_ids=None
     if head_dim % 2 != 0:
         raise ValueError("RoPE requires an even head_dim")
 
-    if _apply_sglang_rope_inplace(
+    if qwen3_fusion_enabled("rope") and _apply_sglang_rope_inplace(
         q,
         k,
         rope_theta=rope_theta,
@@ -1099,7 +1106,8 @@ def apply_qwen3_rope(q, k, *, rope_theta: float = 1_000_000.0, position_ids=None
 
     flashinfer_rope = _flashinfer_apply_rope_pos_ids()
     if (
-        _selected_kernel_backend(CAP_ROPE) == "flashinfer"
+        qwen3_fusion_enabled("rope")
+        and _selected_kernel_backend(CAP_ROPE) == "flashinfer"
         and flashinfer_rope is not None
         and _is_cuda_tensor(q)
         and _is_cuda_tensor(k)
@@ -1609,6 +1617,8 @@ def _apply_flashinfer_fused_add_rmsnorm(
 
 
 def _apply_prefill_next_input_norm(mlp_out, residual, next_input_norm):
+    if not qwen3_fusion_enabled("add_rmsnorm"):
+        return None
     fused_add_rmsnorm = _flashinfer_fused_add_rmsnorm()
     if (
         _selected_kernel_backend(CAP_FUSED_ADD_RMSNORM) != "flashinfer"
@@ -1627,6 +1637,8 @@ def _apply_prefill_next_input_norm(mlp_out, residual, next_input_norm):
 
 
 def _apply_decode_next_input_norm(mlp_out, residual, next_input_norm):
+    if not qwen3_fusion_enabled("add_rmsnorm"):
+        return None
     exact_fused = _apply_gr_trtllm_exact_fused_add_rmsnorm(
         mlp_out,
         residual,
