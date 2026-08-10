@@ -176,16 +176,19 @@ gr_beam_sampling_extra_request_body() {
   local beam_width="$2"
   python - "${decode_steps}" "${beam_width}" <<'PY'
 import json
+import os
 import sys
 
-print(json.dumps({
-    "sampling_params": {
-        "temperature": 0.0,
-        "max_new_tokens": int(sys.argv[1]),
-        "ignore_eos": True,
-        "n": int(sys.argv[2]),
-    }
-}))
+sampling_params = {
+    "temperature": 0.0,
+    "max_new_tokens": int(sys.argv[1]),
+    "ignore_eos": True,
+    "n": int(sys.argv[2]),
+}
+extra = os.environ.get("SGLANG_BEAM_SAMPLING_EXTRA", "").strip()
+if extra:
+    sampling_params.update(json.loads(extra))
+print(json.dumps({"sampling_params": sampling_params}))
 PY
 }
 

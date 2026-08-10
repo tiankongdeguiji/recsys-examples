@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import argparse
 import inspect
+import json
+import os
 import subprocess
 import sys
 import time
@@ -114,6 +116,16 @@ def run_benchmark(args) -> dict[str, Any]:
     }
 
 
+def _env_json(name: str) -> dict[str, Any]:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return {}
+    value = json.loads(raw)
+    if not isinstance(value, dict):
+        raise ValueError(f"{name} must be a JSON object")
+    return value
+
+
 def _engine_kwargs(args) -> dict[str, Any]:
     kwargs: dict[str, Any] = {}
     if args.tp_size is not None:
@@ -141,6 +153,7 @@ def _create_engine(sgl, args):
         "model_path": args.model_dir,
         "enable_beam_search": True,
         **_engine_kwargs(args),
+        **_env_json("SGLANG_ENGINE_EXTRA_ARGS"),
     }
     try:
         return sgl.Engine(**kwargs)
@@ -299,10 +312,11 @@ def _run_staggered_once(
     }
 
 
-def _sampling_params(args) -> dict[str, int]:
+def _sampling_params(args) -> dict[str, Any]:
     return {
         "max_new_tokens": args.decode_steps,
         "n": args.beam_width,
+        **_env_json("SGLANG_BEAM_SAMPLING_EXTRA"),
     }
 
 
