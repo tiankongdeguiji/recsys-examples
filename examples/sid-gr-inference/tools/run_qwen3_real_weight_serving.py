@@ -673,10 +673,10 @@ def _load_workload_inputs(args, torch, device: str) -> tuple[dict, ...]:
         token_ids = row.get("input_ids")
         if not isinstance(token_ids, list) or not token_ids:
             raise ValueError(f"{path}:{line_no} must contain non-empty input_ids list")
-        if len(token_ids) != args.context_len:
+        if len(token_ids) > args.context_len:
             raise ValueError(
                 f"{path}:{line_no} has input_ids length {len(token_ids)}, "
-                f"expected --context-len {args.context_len}"
+                f"which exceeds --context-len {args.context_len}"
             )
         rows.append(
             {
@@ -971,7 +971,10 @@ def main() -> None:
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument(
         "--workload-jsonl",
-        help="Optional JSONL workload with request_id, text, and exact input_ids.",
+        help=(
+            "Optional JSONL workload with request_id, text, and exact input_ids. "
+            "Rows may have differing lengths; --context-len is the upper bound."
+        ),
     )
     parser.add_argument(
         "--record-outputs",
